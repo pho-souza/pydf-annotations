@@ -1,0 +1,16 @@
+site_name: My Docs
+repo_url: https://github.com/pho-souza/pydf-annotations
+repo_name: pho-souza/pydf-annotations
+edit_uri: tree/main/docs
+
+theme:
+  name: material
+  language: pt-br
+  logo: assets/logo.png
+  favicon: assets/logo.png
+
+markdown_extensions:
+  - attr_list
+
+extra_css:
+  - stylesheet/extra.css
