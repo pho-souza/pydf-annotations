@@ -1,6 +1,7 @@
-import os
+import platform
+
+SYSTEM = platform.system()
+LINEBREAK = '\n'
 
 
-LINEBREAK = "\n"
-
-print(os.system)
+print(SYSTEM)

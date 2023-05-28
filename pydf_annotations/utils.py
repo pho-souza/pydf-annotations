@@ -1,5 +1,4 @@
 """This File contains project functions
-
 """
 import colorsys
 import operator
@@ -7,7 +6,7 @@ import os
 import pathlib
 import re
 
-from jinja2 import Environment,  FileSystemLoader
+from jinja2 import Environment, FileSystemLoader
 
 import cfg as cfg
 
@@ -25,36 +24,28 @@ CHARACTER_SUBSTITUTIONS = {
 }
 
 
-
-
-config_file = os.path.abspath(pathlib.Path(__file__).parent) + ("/default_cfg.json")
+config_file = os.path.abspath(pathlib.Path(__file__).parent) + (
+    '/default_cfg.json'
+)
 config_file = os.path.abspath(config_file)
 if os.path.exists(config_file):
     CONF = Config_file(config_file)
 else:
     CONF = Config_file()
 
-if not "DEFAULT_COLOR" in globals() or not "DEFAULT_COLOR" in locals() :
+if not 'DEFAULT_COLOR' in globals() or not 'DEFAULT_COLOR' in locals():
     # print("Assign globals")
-    DEFAULT_COLOR = CONF.get_cfg("DEFAULT_COLOR")
-    PATH = CONF.get_cfg("TEMPLATE_FOLDER")
-    DEFAULT_TEMPLATE = CONF.get_cfg("DEFAULT_TEMPLATE")
-
-
+    DEFAULT_COLOR = CONF.get_cfg('DEFAULT_COLOR')
+    PATH = CONF.get_cfg('TEMPLATE_FOLDER')
+    DEFAULT_TEMPLATE = CONF.get_cfg('DEFAULT_TEMPLATE')
 
 
 TEMPLATE_ENVIRONMENT = Environment(
     autoescape=False,
     loader=FileSystemLoader(os.path.abspath(PATH)),
     trim_blocks=True,
-    lstrip_blocks=False
+    lstrip_blocks=False,
 )
-
-
-
-
-
-
 
 
 def cleanup_text(text: str) -> str:
@@ -62,11 +53,13 @@ def cleanup_text(text: str) -> str:
     Normalise line endings and replace common special characters with plain ASCII equivalents.
     """
     if '\r' in text:
-        text = text.replace('\r\n',  '\n').replace('\r',  '\n')
-    return ''.join([CHARACTER_SUBSTITUTIONS.get(c,  c) for c in text])
+        text = text.replace('\r\n', '\n').replace('\r', '\n')
+    return ''.join([CHARACTER_SUBSTITUTIONS.get(c, c) for c in text])
 
 
-def merge_lines(captured_text: str,  remove_hyphens: bool = False,  strip_space: bool = True) -> str:
+def merge_lines(
+    captured_text: str, remove_hyphens: bool = False, strip_space: bool = True
+) -> str:
     """
     Merge and cleanup lines in captured text,  optionally removing hyphens.
 
@@ -86,15 +79,19 @@ def merge_lines(captured_text: str,  remove_hyphens: bool = False,  strip_space:
 
         nextline = lines[i + 1] if i + 1 < len(lines) else None
 
-        if (len(thisline) >= 2
-                and thisline[-1] == '-'       # Line ends in an apparent hyphen
-                and thisline[-2].islower()):  # Prior character was a lowercase letter
+        if (
+            len(thisline) >= 2
+            and thisline[-1] == '-'  # Line ends in an apparent hyphen
+            and thisline[-2].islower()
+        ):  # Prior character was a lowercase letter
             # We have a likely hyphen. Remove it if desired.
             if remove_hyphens:
                 thisline = thisline[:-1]
-        elif (not thisline[-1].isspace()
-              and nextline is not None
-              and (nextline == '' or not nextline[0].isspace())):
+        elif (
+            not thisline[-1].isspace()
+            and nextline is not None
+            and (nextline == '' or not nextline[0].isspace())
+        ):
             # Insert space to replace the line break
             thisline += ' '
 
@@ -106,72 +103,78 @@ def merge_lines(captured_text: str,  remove_hyphens: bool = False,  strip_space:
 
     return ''.join(results)
 
+
 def convert_to_hls(colors: list) -> tuple:
     """
-    Convert rgb colors to hsl color pattern 
-    
+    Convert rgb colors to hsl color pattern
+
     """
     # print(isinstance(colors,  list))
-    if isinstance(colors,  list) and len(colors) == 3:
-        (r,  g,  b) = colors
+    if isinstance(colors, list) and len(colors) == 3:
+        (r, g, b) = colors
     else:
-        (r,  g,  b) = DEFAULT_COLOR
+        (r, g, b) = DEFAULT_COLOR
     (h, l, s) = colorsys.rgb_to_hls(r, g, b)
     return (h, s, l)
+
 
 def colors_names(colors_hls: tuple) -> str:
     """
     The colors name intervals are from mgmeyers: https://github.com/mgmeyers/pdfannots2json
     """
     if len(colors_hls) != 3:
-        return "none"
+        return 'none'
     else:
         (h, s, l) = colors_hls
         if l < 0.12:
-            return "Black"
+            return 'Black'
         if l > 0.98:
-            return "White"
+            return 'White'
         if s < 0.2:
-            return "Gray"
-        if h < 15/360:
-            return "Red"
-        if h < 45/360:
-            return "Orange"
-        if h < 65/360:
-            return "Yellow"
-        if h < 160/360:
-            return "Green"
-        if h < 190/360:
-            return "Cyan"
-        if h < 265/360:
-            return "Blue"
-        if h < 280/360:
-            return "Purple"
-        if h < 320/360:
-            return "Pink"
-        if h < 335/360:
-            return "Magenta"
-        return "Red"
+            return 'Gray'
+        if h < 15 / 360:
+            return 'Red'
+        if h < 45 / 360:
+            return 'Orange'
+        if h < 65 / 360:
+            return 'Yellow'
+        if h < 160 / 360:
+            return 'Green'
+        if h < 190 / 360:
+            return 'Cyan'
+        if h < 265 / 360:
+            return 'Blue'
+        if h < 280 / 360:
+            return 'Purple'
+        if h < 320 / 360:
+            return 'Pink'
+        if h < 335 / 360:
+            return 'Magenta'
+        return 'Red'
 
 
-def annots_reorder_custom(annotations, criteria = None,  ascending = True) -> dict:
+def annots_reorder_custom(annotations, criteria=None, ascending=True) -> dict:
     """
     This function reordenate the annotations based on criteria order
     """
     # criteria = criteria
-    validate_criteria = ["page", "type", "start_xy", "author", "created"]
+    validate_criteria = ['page', 'type', 'start_xy', 'author', 'created']
     for i in criteria:
         if i not in validate_criteria:
-            print(i, " criteria is not valid! Please use: ",  str(validate_criteria))
+            print(
+                i,
+                ' criteria is not valid! Please use: ',
+                str(validate_criteria),
+            )
             print(criteria)
             return annotations
-    
+
     # if isinstance(ordenation, list) and len(ordenation) != len(criteria):
     #     print("Ordenation not valid! Please use a list of" + len(criteria) + " strings,  or a simple string.")
     #     return annotations
 
     temp = annotations.copy()
-    
+
     if ascending:
         temp = sorted(temp, key=operator.itemgetter(*criteria))
     else:
@@ -179,19 +182,22 @@ def annots_reorder_custom(annotations, criteria = None,  ascending = True) -> di
 
     return temp
 
-def annots_reorder_columns(annotations: dict, columns = 1, tolerance = 0.1) -> dict:
+
+def annots_reorder_columns(
+    annotations: dict, columns=1, tolerance=0.1
+) -> dict:
     """
     This function reordenate the annotations based on: page,  columns and vertical position
     """
     temp = []
     # temp2 = []
-    
+
     # Columns size
     columns_x = []
-    for i in range(0, columns+1):
-        col_widget = (1/columns) * i
+    for i in range(0, columns + 1):
+        col_widget = (1 / columns) * i
         columns_x.append(col_widget)
-    
+
     # Get all values
     pages = []
     rect_coord = []
@@ -203,7 +209,7 @@ def annots_reorder_columns(annotations: dict, columns = 1, tolerance = 0.1) -> d
         rect_coord.append(annotation['rect_coord'])
         index_init = index_init + 1
         annotation['index'] = index_init
-    
+
     pages = set(pages)
     annotation_index_x0 = [-1]
     annotation_index_x1 = [-1]
@@ -217,31 +223,39 @@ def annots_reorder_columns(annotations: dict, columns = 1, tolerance = 0.1) -> d
             x1 = annotation['rect_coord'][2]
             y0 = annotation['rect_coord'][1]
             y1 = annotation['rect_coord'][3]
-            annotation["y"] = y0
-            column_min = columns_x[column-1] - tolerance
+            annotation['y'] = y0
+            column_min = columns_x[column - 1] - tolerance
             column_max = columns_x[column] + tolerance
             # print("\n\n\nColumn: ", column, "\n Min: ", column_min, "\nMax: ", column_max)
-            if x0 >= column_min and x0 < column_max and index not in annotation_index_x0:
+            if (
+                x0 >= column_min
+                and x0 < column_max
+                and index not in annotation_index_x0
+            ):
                 annotation['column'] = [column]
                 annotation_index_x0.append(index)
-            if x1 >= column_min and x1 < column_max and index not in annotation_index_x1:
+            if (
+                x1 >= column_min
+                and x1 < column_max
+                and index not in annotation_index_x1
+            ):
                 annotation['column'].append(column)
                 annotation_index_x1.append(index)
 
     for annotation in annotations:
-        if annotation["column"][0] == annotation["column"][1]:
-            annotation["column"] = annotation["column"][0]
-        elif annotation["column"][0] == 1:
-            annotation["column"] = 1.0
+        if annotation['column'][0] == annotation['column'][1]:
+            annotation['column'] = annotation['column'][0]
+        elif annotation['column'][0] == 1:
+            annotation['column'] = 1.0
         else:
-            annotation["column"] = max(annotation["column"])
-    
+            annotation['column'] = max(annotation['column'])
+
     temp = annotations.copy()
-    
-    temp = sorted(temp, key=operator.itemgetter('page',  'column', "y"))
-                    
-    
+
+    temp = sorted(temp, key=operator.itemgetter('page', 'column', 'y'))
+
     return temp
+
 
 def path_normalizer(path: str):
     """
@@ -250,13 +264,15 @@ def path_normalizer(path: str):
     Args:
         path (str): string
     """
-    result = re.sub('\\\\', "/", path)
+    result = re.sub('\\\\', '/', path)
     return result
 
-def is_dir(path=""):
+
+def is_dir(path=''):
     return os.path.isdir(path)
 
-def md_export(annotations, title = "Title", template = DEFAULT_TEMPLATE):
+
+def md_export(annotations, title='Title', template=DEFAULT_TEMPLATE):
     """
     Export the annotation using some jinja template.
     """
@@ -264,7 +280,6 @@ def md_export(annotations, title = "Title", template = DEFAULT_TEMPLATE):
     print(f'LEN HIGHLIGHTS: {len(annotations)}')
 
     md_template = TEMPLATE_ENVIRONMENT.get_template(template)
-    retorno = md_template.render(title = title,
-    highlights = annotations)
-    
+    retorno = md_template.render(title=title, highlights=annotations)
+
     return retorno
