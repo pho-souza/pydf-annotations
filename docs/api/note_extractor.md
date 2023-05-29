@@ -1,0 +1,2 @@
+## The **NoteExtractor** class
+::: noteextractor
