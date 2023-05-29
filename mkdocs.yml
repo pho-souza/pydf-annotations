@@ -19,4 +19,4 @@ plugins:
 - mkdocstrings:
     handlers: 
       python:
-        paths: [pydf_annotations]
+        paths: [note_extractor]

@@ -4,7 +4,7 @@ version = "0.1.0"
 description = ""
 authors = ["pho-souza <pedroka196@gmail.com>"]
 readme = "README.md"
-packages = [{include = "pydf_annotations"}]
+packages = [{include = "note_extractor"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -33,11 +33,12 @@ addopts = "--doctest-modules"
 
 [tool.isort]
 profile = "black"
-line_lenght = 79
+line_length = 79
+skip = [".gitignore"]
 
 [tool.taskipy.tasks]
 lint = "blue --check --diff . && isort --check --diff ."
 docs = "mkdocs serve"
 pre_test = "task lint"
-test = "pytest -s -x --cov = pydf_annotations -vv"
+test = "pytest -s -x --cov=note_extractor -vv"
 post_test = "coverage html"
