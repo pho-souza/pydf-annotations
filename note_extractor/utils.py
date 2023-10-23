@@ -24,15 +24,24 @@ CHARACTER_SUBSTITUTIONS = {
     '…': '...',
 }
 
-
 config_file = os.path.abspath(pathlib.Path(__file__).parent) + (
     '/default_cfg.json'
 )
-config_file = os.path.abspath(config_file)
-if os.path.exists(config_file):
-    CONF = Config_file(config_file)
-else:
-    CONF = Config_file()
+
+
+def load_config_file(config_file=config_file):
+    config_file = os.path.abspath(config_file)
+    if os.path.exists(config_file):
+        try:
+            CONF = Config_file().load_cfg(config_file)
+        except:
+            CONF = Config_file()
+    else:
+        CONF = Config_file()
+    return CONF
+
+
+CONF = load_config_file()
 
 if not 'DEFAULT_COLOR' in globals() or not 'DEFAULT_COLOR' in locals():
     # print("Assign globals")
@@ -145,9 +154,9 @@ def colors_names(colors_hls: tuple) -> str:
         return 'none'
     else:
         (h, s, l) = colors_hls
-        if l < 0.12:
+        if l < 0.15:
             return 'Black'
-        if l > 0.98:
+        if l > 0.95:
             return 'White'
         if s < 0.2:
             return 'Gray'
@@ -163,11 +172,9 @@ def colors_names(colors_hls: tuple) -> str:
             return 'Cyan'
         if h < 265 / 360:
             return 'Blue'
-        if h < 280 / 360:
+        if h < 355 / 360 and l <= 0.35:
             return 'Purple'
-        if h < 320 / 360:
-            return 'Pink'
-        if h < 335 / 360:
+        if h < 355 / 360:
             return 'Magenta'
         return 'Red'
 

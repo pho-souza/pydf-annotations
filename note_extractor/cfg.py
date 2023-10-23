@@ -3,6 +3,7 @@ This file contains the configuration class.
 """
 import json
 import os
+import re
 
 
 class Config_file:
@@ -17,24 +18,53 @@ class Config_file:
             cfg_file (str, optional): File path to json configurations. Defaults to ''.
         """
         self.default_config()
-        if cfg_file != '' and os.path.isfile(cfg_file):
-            self.__file = open(cfg_file, mode='r', encoding='utf-8')
-            self.__config_file = json.load(self.__file)
-        else:
-            self.__config_file = self.__default
-        self.validate()
+        # if cfg_file != '' and os.path.isfile(cfg_file):
+        #     self.load_cfg(cfg_file)
+        # else:
+        #     self.__config_file = self.__default
+        self.load_cfg(cfg_file)
+        # self.validate()
 
     def change_cfg(self, parameter: str, new_value):
         """
         Change configuration of some parameter.
-
-        Note that this method allows the creation of new parameters.
         Args:
             parameter (str): Name of parameter to be changed.
-            new_value (_type_): New value to bem setted.
-        There is no default type for **new_value** because the program can't predict what the user will set.
+            new_value (_type_): New value to be setted.
         """
-        self.config[parameter] = new_value
+        if not isinstance(parameter, str):
+            raise ValueError('The parameter is not a string.')
+        elif not parameter in self.default.keys():
+            raise ValueError('This is not a valid key.')
+        elif type(new_value) is not type(self.default[parameter]):
+            raise ValueError('Invalid parameter type.')
+        else:
+            self.config[parameter] = new_value
+            self.validate()
+
+    def load_cfg(self, path: str = ''):
+        empty_file = path == ''
+        if not empty_file:
+            if os.path.isdir(path):
+                raise ValueError('This is a folder, not a config json.')
+            elif not os.path.isfile(path):
+                raise ValueError('This file does not exist.')
+            elif self.json_validator(path) == False:
+                raise ValueError('Invalid config file.')
+            else:
+                self.__file = open(path, mode='r', encoding='utf-8')
+                self.__config_file = json.load(self.__file)
+                self.validate()
+        else:
+            self.__config_file = self.__default
+
+    def json_validator(self, path=''):
+        try:
+            json_file = open(file=path, mode='r', encoding='utf-8')
+            json.load(json_file)
+            return True
+        except ValueError as err:
+            return False
 
     # @property
     def get_cfg(self, parameter: str):
@@ -44,14 +74,16 @@ class Config_file:
     def config(self):
         return self.__config_file['config']
 
-    def save(self, path):
+    def save(self, path=''):
         json_save = json.dumps(self.__config_file, indent=4)
+        if os.path.isdir(path):
+            raise ValueError('This path is a directory.')
         with open(path, mode='w', encoding='utf-8') as f:
             f.write(json_save)
 
     def validate(self):
         for default in self.default:
-            if default in self.config.keys() is False:
+            if default not in self.config.keys():
                 default_value = self.default[default]
                 self.change_cfg(parameter=default, new_value=default_value)
 
@@ -70,6 +102,12 @@ class Config_file:
         # project_folder=re.sub("\\\\",  "/",  project_folder)
 
         template_folder = project_folder + '/templates/'
+
+        if not os.path.exists(project_folder):
+            os.mkdir(project_folder)
+        if not os.path.exists(template_folder):
+            os.mkdir(template_folder)
+
         default.setdefault('DEFAULT_TEMPLATE', 'template_html.html')
         default.setdefault('IMG_FOLDER', 'img/')
         default.setdefault('TEMPLATE_FOLDER', template_folder)

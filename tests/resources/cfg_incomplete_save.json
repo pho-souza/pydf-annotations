@@ -1,16 +1,20 @@
 {
-    "config":{
+    "config": {
         "DEFAULT_TEMPLATE": "template_html.html",
         "IMG_FOLDER": "img/",
-        "TEMPLATE_FOLDER": "./note_extractor/templates",
-        "DEFAULT_COLOR":  [1.0, 1.0, 0.0],
+        "TEMPLATE_FOLDER": "F:\\Python\\pydf-annotations\\app/templates/",
+        "DEFAULT_COLOR": [
+            1.0,
+            1.0,
+            0.0
+        ],
         "INTERSECTION_LEVEL": 0.1,
         "COLUMNS": 1,
         "TOLERANCE": 0.1,
         "ADJUST_COLOR": true,
         "ADJUST_DATE": true,
+        "ADJUST_TEXT": true,
         "IMAGE": true,
-        "INK": true,
-        "ADJUST_COLOR": true
+        "INK": true
     }
 }

@@ -41,7 +41,9 @@ class NoteExtractor:
         """
         Load PDF file.
         """
-        if not os.path.exists(file):
+        if file == '':
+            pass
+        elif not os.path.exists(file):
             raise ValueError('This file does not exist.')
         elif os.path.isdir(file):
             raise ValueError('This path is a folder.')
@@ -53,7 +55,7 @@ class NoteExtractor:
         self.file = file
         self.pdf = fitz.open(self.file)
 
-    def notes_extract(self, intersection_level: float):
+    def notes_extract(self, intersection_level: float = 0.1):
         """
         Extract annotations from PDF file.
 
@@ -81,6 +83,11 @@ class NoteExtractor:
             modified: date where annotation was modified.
             color: color extract from annotation in RGB list.
         """
+        if intersection_level > 1.0 or intersection_level < 0.0:
+            raise ValueError(
+                'Intersection level must be beteween 0.0 and 1.0.'
+            )
+
         self.__threshold_intersection = intersection_level
         for page_num in range(0, self.pdf.page_count - 1):
             page = self.pdf[page_num]
@@ -111,10 +118,6 @@ class NoteExtractor:
                     # print(annot.type[1])
                     anotacao['start_xy'] = anotacao['rect_coord'][0:2]
                     text = ''
-                    if self.__threshold_intersection < 0:
-                        self.__threshold_intersection = 0
-                    if self.__threshold_intersection > 1:
-                        self.__threshold_intersection = 1
                     if (
                         annot.vertices
                         and len(annot.vertices) >= 4
@@ -127,10 +130,10 @@ class NoteExtractor:
                     anotacao['modified'] = annot.info['modDate']
                     anotacao['has_img'] = False
                     anotacao['img_path'] = ''
-                    if annot.colors['stroke']:
-                        anotacao['color'] = list(annot.colors['stroke'])
-                    elif annot.colors['fill']:
+                    if annot.colors['fill']:
                         anotacao['color'] = list(annot.colors['fill'])
+                    elif annot.colors['stroke']:
+                        anotacao['color'] = list(annot.colors['stroke'])
                     else:
                         anotacao['color'] = list((0, 0, 0))
                     self.highlights.append(anotacao)
@@ -238,22 +241,21 @@ class NoteExtractor:
         """
         full_path = os.path.abspath(path)
 
+        if os.path.exists(full_path) is False:
+            raise ValueError('This file does not exist.')
+
         file_name = os.path.basename(full_path)
 
         move_path = self.__path_template + '/' + file_name
 
-        # move_path = utils.path_normalizer(os.path.abspath(move_path))
         move_path = os.path.abspath(move_path)
 
-        # full_path = utils.path_normalizer(full_path)
-
-        # print(full_path)
-
-        # full_path = re.sub('\\', '/', full_path)
-
-        # if os.path.exists(move_path):
-        shutil.copy(src=full_path, dst=move_path)
-        print('File {} imported into {}'.format(full_path, move_path))
+        if os.path.isfile(full_path):
+            shutil.copy(src=full_path, dst=move_path)
+            print('File {} imported into {}'.format(full_path, move_path))
+        if os.path.isdir(full_path):
+            shutil.copytree(src=full_path, dst=move_path)
+            print('Folder {} imported into {}'.format(full_path, move_path))
 
     def rename_template(self, name: str, new_name: str):
         """
@@ -264,22 +266,20 @@ class NoteExtractor:
             new_name (str): New template name
         """
         # print(type(name))
-        try:
-            if name:
-                actual_file = self.__path_template + '/' + name
-                # actual_file = utils.path_normalizer(os.path.abspath(actual_file))
-                actual_file = os.path.abspath(actual_file)
-            if new_name:
-                new_file = self.__path_template + '/' + new_name
-                # new_file = utils.path_normalizer(os.path.abspath(new_file))
-                new_file = os.path.abspath(new_file)
-            if os.path.exists(actual_file):
-                shutil.move(actual_file, new_file)
-                print('File {} renamed to {}'.format(actual_file, new_file))
-        except:
-            print(
-                'Error. Use a exist name of template and a valid name for template'
-            )
+        if name not in self.templates:
+            raise ValueError('This template does not exist.')
+
+        if name:
+            actual_file = self.__path_template + '/' + name
+            # actual_file = utils.path_normalizer(os.path.abspath(actual_file))
+            actual_file = os.path.abspath(actual_file)
+        if new_name:
+            new_file = self.__path_template + '/' + new_name
+            # new_file = utils.path_normalizer(os.path.abspath(new_file))
+            new_file = os.path.abspath(new_file)
+        if os.path.exists(actual_file):
+            shutil.move(actual_file, new_file)
+            print('File {} renamed to {}'.format(actual_file, new_file))
 
     def remove_template(self, name: str):
         """Remove template from template folder
@@ -287,14 +287,14 @@ class NoteExtractor:
         Args:
             name (str): Template to be removed
         """
-        try:
-            file = self.__path_template + '//' + name
-            file = utils.path_normalizer(os.path.abspath(file))
-            if os.path.exists(file):
-                os.remove(file)
-                print('File {} removed from templates folder'.format(file))
-        except:
-            print('Error')
+        if name not in self.templates:
+            raise ValueError('This template does not exist.')
+
+        file = self.__path_template + '//' + name
+        file = utils.path_normalizer(os.path.abspath(file))
+        if os.path.exists(file):
+            os.remove(file)
+            print('File {} removed from templates folder'.format(file))
 
     @property
     def templates(self):
@@ -305,9 +305,12 @@ class NoteExtractor:
         """
         path_template = self.__path_template
         files = os.listdir(path_template)
-        for file in range(0, len(files)):
-            if os.path.isdir(files[file]):
-                files.remove(files[file])
+        # if isinstance(files, str):
+        #     files = list(files)
+        for file in files:
+            full_path = os.path.join(path_template, file)
+            if os.path.isdir(full_path):
+                files.remove(file)
         return files
 
     def get_metadata(self):
@@ -366,9 +369,9 @@ class NoteExtractor:
             Folder created inside location to store images.
         """
         self.reload()
+        if 'annot_number' not in locals():
+            annot_number = 0
         for annot in self.highlights:
-            if 'annot_number' not in locals():
-                annot_number = 0
             if annot['type'] == 'Square':
                 annot_number = annot_number + 1
                 page_number = annot['page']
@@ -376,29 +379,30 @@ class NoteExtractor:
 
                 pdf_page = self.pdf[page]
 
-                # print(page)
+                # pdf_page.set_rotation(90)
 
-                pdf_page = self.pdf[page]
+                number_of_rotation = pdf_page.rotation
+
+                pdf_page.set_rotation(0)
 
                 # Remove annotations in the page
-                try:
-                    for annotation in pdf_page.annots():
-                        # print(annotation)
-                        pdf_page.delete_annot(annotation)
-                except:
-                    # print('No annotations to exclude at ')
-                    pass
+                for annotation in pdf_page.annots():
+                    # print(annotation)
+                    pdf_page.delete_annot(annotation)
+
                 user_space = annot['rect_coord']
                 # area = pdf_page.get_pixmap(dpi = 300)
                 area = pdf_page.bound()
-                # area = user_space
-                area.x0 = user_space[0] * area[2]
-                area.x1 = user_space[2] * area[2]
-                area.y0 = user_space[1] * area[3]
-                area.y1 = user_space[3] * area[3]
+                # area = area.derotation_matrix
+
+                area.x0 = user_space[0] * area.x1
+                area.x1 = user_space[2] * area.x1
+                area.y0 = user_space[1] * area.y1
+                area.y1 = user_space[3] * area.y1
 
                 clip = fitz.Rect(area.tl, area.br)
 
+                # clip.set_rotation(number_of_rotation)
                 # print(clip)
 
                 if not os.path.exists(location):
@@ -408,6 +412,8 @@ class NoteExtractor:
 
                 file = re.sub('(.*/|.*\\\\)', '', self.file)
                 file = re.sub('[.]pdf', '', file)
+                file = re.sub('[ -]+', '_', file)
+                file = re.sub('[_]+', '_', file)
                 file = utils.path_normalizer(file)
                 page = page + 1
 
@@ -434,9 +440,17 @@ class NoteExtractor:
                 if os.path.exists(file_export):
                     annot['has_img'] = True
                     annot['img_path'] = img_folder
+                    if number_of_rotation > 0:
+                        img_pil = Image.open(fp=file_export)
+                        img_pil = img_pil.rotate(
+                            -number_of_rotation, expand=True
+                        )
+                        img_pil.save(fp=file_export)
+                        img_pil.close()
                 else:
                     annot['has_img'] = False
                     annot['img_path'] = ''
+
             self.reload()
 
     def reorder_custom(
@@ -492,18 +506,26 @@ class NoteExtractor:
             folder: folder created inside location to store images.
         """
         list_pages = dict()
+        if 'annot_number' not in locals():
+            annot_number = 0
         for annot in self.highlights:
             if annot['type'] == 'Ink':
                 if 'anterior_page' not in locals():
                     anterior_page = annot['page']
                     anterior_userspace = annot['rect_coord']
                     anterior = 1
+
+                annot_number = annot_number + 1
                 page_number = annot['page']
-                page = annot['page'] - 1
+                page = page_number - 1
 
                 pdf_page = self.pdf[page]
 
-                # print(page_number)
+                # pdf_page.set_rotation(90)
+
+                number_of_rotation = pdf_page.rotation
+
+                pdf_page.set_rotation(0)
 
                 # Remove annotations in the page
                 try:
@@ -517,84 +539,139 @@ class NoteExtractor:
                 # area = pdf_page.get_pixmap(dpi = 300)
                 area = pdf_page.bound()
                 page_area = pdf_page.bound()
-                # area = user_space
-                if page_number == anterior_page:
-                    anterior += 1
-                    area.x0 = (
-                        min(user_space[0], anterior_userspace[0]) * area[2]
-                    )
-                    area.x1 = (
-                        max(user_space[2], anterior_userspace[2]) * area[2]
-                    )
-                    area.y0 = (
-                        min(user_space[1], anterior_userspace[1]) * area[3]
-                    )
-                    area.y1 = (
-                        max(user_space[3], anterior_userspace[3]) * area[3]
-                    )
-                else:
-                    anterior = 1
-                    area.x0 = user_space[0] * area[2]
-                    area.x1 = user_space[2] * area[2]
-                    area.y0 = user_space[1] * area[3]
-                    area.y1 = user_space[3] * area[3]
+
+                # if page_number == anterior_page:
+                #     anterior += 1
+                #     area.x0 = (
+                #         min(user_space[0], anterior_userspace[0]) * area.x1
+                #     )
+                #     area.x1 = (
+                #         max(user_space[2], anterior_userspace[2]) * area.x1
+                #     )
+                #     area.y0 = (
+                #         min(user_space[1], anterior_userspace[1]) * area.y1
+                #     )
+                #     area.y1 = (
+                #         max(user_space[3], anterior_userspace[3]) * area.y1
+                #     )
+                # else:
+                #     anterior = 1
+                area.x0 = user_space[0] * area.x1
+                area.x1 = user_space[2] * area.x1
+                area.y0 = user_space[1] * area.y1
+                area.y1 = user_space[3] * area.y1
 
                 clip = fitz.Rect(area.tl, area.br)
                 page_numeration = 'p_' + str(page + 1)
 
-                file = re.sub('.*/|.*\\\\', '', self.file)
+                if not os.path.exists(location):
+                    os.mkdir(location)
+                if not os.path.exists(location + '/' + folder):
+                    os.mkdir(location + '/' + folder)
+
+                file = re.sub('(.*/|.*\\\\)', '', self.file)
                 file = re.sub('[.]pdf', '', file)
+                file = re.sub('[ -]+', '_', file)
+                file = re.sub('[_]+', '_', file)
+                file = utils.path_normalizer(file)
                 page = page + 1
 
-                file_name = file + '_p' + str(page) + '_ink' + '.png'
+                file_name = (
+                    file
+                    + '_p'
+                    + str(page)
+                    + '_ink_'
+                    + str(annot_number)
+                    + '.png'
+                )
 
                 file_export = location + '/' + folder + '/' + file_name
-                file_export = os.path.abspath(file_export)
-                file_export = utils.path_normalizer(file_export)
-                file_export = re.sub('/+', '/', file_export)
+                # print(file_export)
+
+                file_export = utils.path_normalizer(
+                    os.path.abspath(file_export)
+                )
 
                 img_folder = folder + '/' + file_name
                 # img_folder = os.path.abspath(img_folder)
-                img_folder = utils.path_normalizer(img_folder)
                 img_folder = re.sub('/+', '/', img_folder)
+                img_folder = utils.path_normalizer(img_folder)
 
-                list_pages[page_numeration] = {
-                    'page': page,
-                    'clip': clip,
-                    'file': file,
-                    'file_name': file_name,
-                    'file_export': file_export,
-                }
+                img = pdf_page.get_pixmap(clip=clip, dpi=300)
+                # print(file_export)
+                img.save(file_export)
 
-                anterior_page = annot['page']
-                anterior_userspace = [
-                    clip.x0 / page_area[2],
-                    clip.y0 / page_area[3],
-                    clip.x1 / page_area[2],
-                    clip.y1 / page_area[3],
-                ]
-
-        # print(list_pages)
-        for pg in list_pages:
-            if not os.path.exists(location):
-                os.mkdir(location)
-            if not os.path.exists(location + '/' + folder):
-                os.mkdir(location + '/' + folder)
-
-            pdf_page = self.pdf[list_pages[pg]['page']]
-
-            img = pdf_page.get_pixmap(clip=list_pages[pg]['clip'], dpi=300)
-            # print(file_export)
-            # if anterior <= anterior_number:
-            img.save(list_pages[pg]['file_export'])
-
-            for annot in self.highlights:
                 if os.path.exists(file_export):
                     annot['has_img'] = True
                     annot['img_path'] = img_folder
+                    if number_of_rotation > 0:
+                        img_pil = Image.open(fp=file_export)
+                        img_pil = img_pil.rotate(
+                            -number_of_rotation, expand=True
+                        )
+                        img_pil.save(fp=file_export)
+                        img_pil.close()
                 else:
                     annot['has_img'] = False
                     annot['img_path'] = ''
+
+                # file_export = location + '/' + folder + '/' + file_name
+                # # print(file_export)
+
+                # file_export = location + '/' + folder + '/' + file_name
+                # file_export = os.path.abspath(file_export)
+                # file_export = utils.path_normalizer(file_export)
+                # file_export = re.sub('/+', '/', file_export)
+
+                # img_folder = folder + '/' + file_name
+                # # img_folder = os.path.abspath(img_folder)
+                # img_folder = utils.path_normalizer(img_folder)
+                # img_folder = re.sub('/+', '/', img_folder)
+
+                # list_pages[page_numeration] = {
+                #     'page': page,
+                #     'clip': clip,
+                #     'file': file,
+                #     'file_name': file_name,
+                #     'file_export': file_export,
+                # }
+
+                # anterior_page = annot['page']
+                # anterior_userspace = [
+                #     clip.x0 / page_area[2],
+                #     clip.y0 / page_area[3],
+                #     clip.x1 / page_area[2],
+                #     clip.y1 / page_area[3],
+                # ]
+
+        # # print(list_pages)
+        # for pg in list_pages:
+        #     if not os.path.exists(location):
+        #         os.mkdir(location)
+        #     if not os.path.exists(location + '/' + folder):
+        #         os.mkdir(location + '/' + folder)
+
+        #     pdf_page = self.pdf[list_pages[pg]['page']]
+
+        #     img = pdf_page.get_pixmap(clip=list_pages[pg]['clip'], dpi=300)
+        #     # print(file_export)
+        #     # if anterior <= anterior_number:
+        #     img.save(list_pages[pg]['file_export'])
+
+        #     for annot in self.highlights:
+        #         if os.path.exists(file_export):
+        #             annot['has_img'] = True
+        #             annot['img_path'] = img_folder
+        #             if number_of_rotation > 0:
+        #                 img_pil = Image.open(fp=file_export)
+        #                 img_pil = img_pil.rotate(
+        #                     -number_of_rotation, expand=True
+        #                 )
+        #                 img_pil.save(fp=file_export)
+        #                 img_pil.close()
+        #         else:
+        #             annot['has_img'] = False
+        #             annot['img_path'] = ''
 
         for annot in self.highlights[:]:
             if annot['type'] == 'Ink' and not 'has_img' in annot:

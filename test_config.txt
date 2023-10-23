@@ -1,0 +1,5 @@
+from importlib import reload
+import tests.test_noteextractor as test_ne
+
+reload(test_ne)
+test_ne.test_note_extract_must_create_highlight_files_with_n_entries()

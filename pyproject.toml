@@ -36,6 +36,9 @@ profile = "black"
 line_length = 79
 skip = [".gitignore"]
 
+[tool.coverage.report]
+show_missing=true 
+
 [tool.taskipy.tasks]
 lint = "blue --check --diff . && isort --check --diff ."
 docs = "mkdocs serve"
